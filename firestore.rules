@@ -6,22 +6,22 @@ service cloud.firestore {
     // Helper Functions
     // ===============================================================
     function isAuthenticated() {
-      return request.auth != null;
+      return request.auth != null || true; // Bypass for "no login" mode
     }
     
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return (request.auth != null && request.auth.uid == userId) || userId == 'guest-user';
     }
     
     function isDocOwner() {
-      return isAuthenticated() && request.auth.uid == resource.data.uid;
+      return (request.auth != null && request.auth.uid == resource.data.uid) || resource.data.uid == 'guest-user';
     }
     
     function isAdmin() {
       return isAuthenticated() && 
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || 
-         (request.auth.token.email == "hudsonwalter91@gmail.com" && request.auth.token.email_verified == true));
+        ((request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') || 
+         (request.auth != null && request.auth.token.email == "hudsonwalter91@gmail.com" && request.auth.token.email_verified == true));
     }
 
     function hasRequiredFields(fields) {
@@ -41,13 +41,13 @@ service cloud.firestore {
     function isValidAccount(data) {
       return data.name is string && data.name.size() > 0 && data.name.size() < 50 &&
              data.balance is number &&
-             data.uid == request.auth.uid;
+             data.uid == (request.auth != null ? request.auth.uid : 'guest-user');
     }
 
     function isValidCategory(data) {
       return data.name is string && data.name.size() > 0 && data.name.size() < 50 &&
              data.type in ['income', 'expense'] &&
-             data.uid == request.auth.uid;
+             data.uid == (request.auth != null ? request.auth.uid : 'guest-user');
     }
 
     function isValidTransaction(data) {
@@ -55,13 +55,13 @@ service cloud.firestore {
              data.amount is number && data.amount > 0 &&
              data.accountId is string &&
              data.date is string &&
-             data.uid == request.auth.uid;
+             data.uid == (request.auth != null ? request.auth.uid : 'guest-user');
     }
 
     function isValidGoal(data) {
       return data.name is string && data.name.size() > 0 &&
              data.targetValue is number && data.targetValue > 0 &&
-             data.uid == request.auth.uid;
+             data.uid == (request.auth != null ? request.auth.uid : 'guest-user');
     }
 
     // ===============================================================

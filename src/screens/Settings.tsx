@@ -19,7 +19,6 @@ import {
   DollarSign, 
   Database, 
   Trash2, 
-  LogOut,
   ChevronRight,
   Shield,
   Smartphone,
