@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || 
+         (request.auth.token.email == "hudsonwalter91@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidString(field, minLen, maxLen) {
+      return request.resource.data[field] is string && 
+             request.resource.data[field].size() >= minLen && 
+             request.resource.data[field].size() <= maxLen;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    
+    function isValidAccount(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 50 &&
+             data.balance is number &&
+             data.uid == request.auth.uid;
+    }
+
+    function isValidCategory(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 50 &&
+             data.type in ['income', 'expense'] &&
+             data.uid == request.auth.uid;
+    }
+
+    function isValidTransaction(data) {
+      return data.type in ['income', 'expense', 'transfer'] &&
+             data.amount is number && data.amount > 0 &&
+             data.accountId is string &&
+             data.date is string &&
+             data.uid == request.auth.uid;
+    }
+
+    function isValidGoal(data) {
+      return data.name is string && data.name.size() > 0 &&
+             data.targetValue is number && data.targetValue > 0 &&
+             data.uid == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /accounts/{accountId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidAccount(request.resource.data);
+      allow update: if isDocOwner() && isValidAccount(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidCategory(request.resource.data);
+      allow update: if isDocOwner() && isValidCategory(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidTransaction(request.resource.data);
+      allow update: if isDocOwner() && isValidTransaction(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /goals/{goalId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidGoal(request.resource.data);
+      allow update: if isDocOwner() && isValidGoal(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "entities": {
+    "Account": {
+      "title": "Account",
+      "description": "Financial account (Wallet, Bank, etc.)",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Account name" },
+        "balance": { "type": "number", "description": "Current balance" },
+        "initialBalance": { "type": "number", "description": "Initial balance" },
+        "type": { "type": "string", "enum": ["wallet", "checking", "savings", "other"] },
+        "color": { "type": "string", "description": "Hex color code" },
+        "icon": { "type": "string", "description": "Lucide icon name" },
+        "imageUrl": { "type": "string", "description": "Bank logo or custom image URL" },
+        "uid": { "type": "string", "description": "User ID" }
+      },
+      "required": ["name", "balance", "uid"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Transaction category",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Category name" },
+        "type": { "type": "string", "enum": ["income", "expense"] },
+        "color": { "type": "string", "description": "Hex color code" },
+        "icon": { "type": "string", "description": "Lucide icon name" },
+        "parentId": { "type": "string", "description": "Parent category ID for subcategories" },
+        "uid": { "type": "string", "description": "User ID" }
+      },
+      "required": ["name", "type", "uid"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Income or expense record",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["income", "expense", "transfer"] },
+        "amount": { "type": "number", "description": "Transaction value" },
+        "accountId": { "type": "string", "description": "Linked account ID" },
+        "toAccountId": { "type": "string", "description": "Target account ID for transfers" },
+        "categoryId": { "type": "string", "description": "Linked category ID" },
+        "date": { "type": "string", "format": "date-time", "description": "Transaction date" },
+        "description": { "type": "string", "description": "Short description" },
+        "paymentMethod": { "type": "string", "description": "Payment method" },
+        "status": { "type": "string", "enum": ["paid", "pending"] },
+        "uid": { "type": "string", "description": "User ID" }
+      },
+      "required": ["type", "amount", "accountId", "date", "uid"]
+    },
+    "Goal": {
+      "title": "Goal",
+      "description": "Financial saving goal",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Goal name" },
+        "targetValue": { "type": "number", "description": "Target amount to save" },
+        "currentValue": { "type": "number", "description": "Current saved amount" },
+        "deadline": { "type": "string", "format": "date", "description": "Target date" },
+        "uid": { "type": "string", "description": "User ID" }
+      },
+      "required": ["name", "targetValue", "uid"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile and settings",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "currency": { "type": "string", "default": "BRL" },
+        "uid": { "type": "string" }
+      },
+      "required": ["uid"]
+    }
+  },
+  "firestore": {
+    "/accounts/{accountId}": { "schema": "Account", "description": "User accounts" },
+    "/categories/{categoryId}": { "schema": "Category", "description": "User categories" },
+    "/transactions/{transactionId}": { "schema": "Transaction", "description": "User transactions" },
+    "/goals/{goalId}": { "schema": "Goal", "description": "User goals" },
+    "/users/{userId}": { "schema": "User", "description": "User profiles" }
+  }
+}
