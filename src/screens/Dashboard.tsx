@@ -8,7 +8,7 @@ import {
   limit,
   Timestamp 
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Transaction, Category, Account } from '../types';
 import { formatCurrency, cn } from '../utils';
 import { motion } from 'motion/react';
@@ -45,6 +45,8 @@ export default function Dashboard({ user }: { user: any }) {
     const q = query(collection(db, 'accounts'), where('uid', '==', user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setAccounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Account)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'accounts');
     });
     return () => unsubscribe();
   }, [user]);
@@ -73,10 +75,14 @@ export default function Dashboard({ user }: { user: any }) {
 
     const unsubMonth = onSnapshot(qMonth, (snapshot) => {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'transactions');
     });
 
     const unsubPending = onSnapshot(qPending, (snapshot) => {
       setPendingTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'transactions');
     });
 
     return () => {
@@ -90,6 +96,8 @@ export default function Dashboard({ user }: { user: any }) {
     const q = query(collection(db, 'categories'), where('uid', '==', user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'categories');
     });
     return () => unsubscribe();
   }, [user]);

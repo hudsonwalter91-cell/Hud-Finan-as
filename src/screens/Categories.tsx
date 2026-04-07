@@ -26,20 +26,42 @@ import {
   Briefcase,
   ShoppingBag,
   HeartPulse,
-  GraduationCap
+  GraduationCap,
+  Coffee,
+  Pizza,
+  Bus,
+  Fuel,
+  Tv,
+  Music,
+  ShoppingCart,
+  Stethoscope,
+  Book,
+  Gift,
+  Landmark
 } from 'lucide-react';
 
 const ICONS = [
   { name: 'Utensils', icon: Utensils },
+  { name: 'Coffee', icon: Coffee },
+  { name: 'Pizza', icon: Pizza },
   { name: 'Car', icon: Car },
+  { name: 'Bus', icon: Bus },
+  { name: 'Fuel', icon: Fuel },
   { name: 'Home', icon: Home },
   { name: 'Gamepad', icon: Gamepad },
+  { name: 'Tv', icon: Tv },
+  { name: 'Music', icon: Music },
   { name: 'DollarSign', icon: DollarSign },
   { name: 'TrendingUp', icon: TrendingUp },
+  { name: 'Landmark', icon: Landmark },
   { name: 'Briefcase', icon: Briefcase },
   { name: 'ShoppingBag', icon: ShoppingBag },
+  { name: 'ShoppingCart', icon: ShoppingCart },
   { name: 'HeartPulse', icon: HeartPulse },
+  { name: 'Stethoscope', icon: Stethoscope },
   { name: 'GraduationCap', icon: GraduationCap },
+  { name: 'Book', icon: Book },
+  { name: 'Gift', icon: Gift },
   { name: 'Tag', icon: Tag },
 ];
 
@@ -55,6 +77,8 @@ export default function Categories({ user }: { user: any }) {
     const q = query(collection(db, 'categories'), where('uid', '==', user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'categories');
     });
     return () => unsubscribe();
   }, [user]);
@@ -120,15 +144,15 @@ export default function Categories({ user }: { user: any }) {
             <motion.div 
               layout
               key={cat.id}
-              className="interactive-card relative flex flex-col items-center justify-center p-6 rounded-[24px] group overflow-hidden shadow-sm"
+              className="interactive-card relative flex flex-col items-center justify-center p-4 rounded-[24px] group overflow-hidden shadow-sm aspect-square"
             >
               <div 
-                className="h-12 w-12 rounded-xl flex items-center justify-center mb-3 shadow-inner group-hover:scale-110 transition-transform duration-500"
+                className="h-10 w-10 rounded-xl flex items-center justify-center mb-2 shadow-inner group-hover:scale-110 transition-transform duration-500"
                 style={{ backgroundColor: `${cat.color}15`, color: cat.color, border: `1px solid ${cat.color}30` }}
               >
-                <IconComp size={24} />
+                <IconComp size={20} />
               </div>
-              <p className="font-black text-[11px] text-center text-zinc-100 tracking-tight">{cat.name}</p>
+              <p className="font-bold text-[10px] text-center text-zinc-100 tracking-tight">{cat.name}</p>
               
               <button 
                 onClick={() => handleDelete(cat.id)}

@@ -87,6 +87,8 @@ export default function Transactions({ user }: { user: any }) {
     const q = query(collection(db, 'accounts'), where('uid', '==', user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setAccounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Account)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'accounts');
     });
     return () => unsubscribe();
   }, [user]);
@@ -105,6 +107,8 @@ export default function Transactions({ user }: { user: any }) {
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'transactions');
     });
     return () => unsubscribe();
   }, [user, selectedDate]);
@@ -121,6 +125,8 @@ export default function Transactions({ user }: { user: any }) {
       } else {
         setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'categories');
     });
     return () => unsubscribe();
   }, [user]);

@@ -75,6 +75,8 @@ export default function Cards({ user }: { user: any }) {
     const q = query(collection(db, 'accounts'), where('uid', '==', user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setAccounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Account)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'accounts');
     });
     return () => unsubscribe();
   }, [user]);
@@ -135,22 +137,59 @@ export default function Cards({ user }: { user: any }) {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const resizeImage = (file: File, maxWidth: number, maxHeight: number): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height *= maxWidth / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width *= maxHeight / height;
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check file size (limit to 100KB for base64 storage in Firestore)
-    if (file.size > 102400) {
-      setError("A imagem é muito grande. Por favor, escolha uma imagem com menos de 100KB.");
-      return;
-    }
+    setIsSaving(true);
     setError(null);
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData({ ...formData, imageUrl: reader.result as string });
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Resize to max 200x200 for account icons
+      const resizedBase64 = await resizeImage(file, 200, 200);
+      setFormData({ ...formData, imageUrl: resizedBase64 });
+    } catch (err) {
+      console.error("Error resizing image:", err);
+      setError("Erro ao processar a imagem. Tente outra.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (

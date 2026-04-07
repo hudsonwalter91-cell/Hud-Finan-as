@@ -19,20 +19,42 @@ import {
   Briefcase,
   ShoppingBag,
   HeartPulse,
-  GraduationCap
+  GraduationCap,
+  Coffee,
+  Pizza,
+  Bus,
+  Fuel,
+  Tv,
+  Music,
+  ShoppingCart,
+  Stethoscope,
+  Book,
+  Gift,
+  Landmark
 } from 'lucide-react';
 
 const ICONS = [
   { name: 'Utensils', icon: Utensils },
+  { name: 'Coffee', icon: Coffee },
+  { name: 'Pizza', icon: Pizza },
   { name: 'Car', icon: Car },
+  { name: 'Bus', icon: Bus },
+  { name: 'Fuel', icon: Fuel },
   { name: 'Home', icon: Home },
   { name: 'Gamepad', icon: Gamepad },
+  { name: 'Tv', icon: Tv },
+  { name: 'Music', icon: Music },
   { name: 'DollarSign', icon: DollarSign },
   { name: 'TrendingUp', icon: TrendingUp },
+  { name: 'Landmark', icon: Landmark },
   { name: 'Briefcase', icon: Briefcase },
   { name: 'ShoppingBag', icon: ShoppingBag },
+  { name: 'ShoppingCart', icon: ShoppingCart },
   { name: 'HeartPulse', icon: HeartPulse },
+  { name: 'Stethoscope', icon: Stethoscope },
   { name: 'GraduationCap', icon: GraduationCap },
+  { name: 'Book', icon: Book },
+  { name: 'Gift', icon: Gift },
   { name: 'Tag', icon: Tag },
 ];
 

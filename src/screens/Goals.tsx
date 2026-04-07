@@ -41,6 +41,8 @@ export default function Goals({ user }: { user: any }) {
     const q = query(collection(db, 'goals'), where('uid', '==', user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setGoals(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Goal)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'goals');
     });
     return () => unsubscribe();
   }, [user]);

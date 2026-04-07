@@ -3,14 +3,69 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (optional)
+    //   - displayName: string (optional)
+    //   - currency: string (optional)
+    //
+    // Collection: accounts
+    // Fields:
+    //   - name: string (required, max 50 chars)
+    //   - balance: number (required)
+    //   - initialBalance: number (optional)
+    //   - type: string (required, enum: wallet, checking, savings, other)
+    //   - color: string (optional, hex)
+    //   - icon: string (optional)
+    //   - imageUrl: string (optional, max 200KB base64 or URL)
+    //   - uid: string (required)
+    //   - includeInTotal: bool (optional)
+    //
+    // Collection: categories
+    // Fields:
+    //   - name: string (required, max 50 chars)
+    //   - type: string (required, enum: income, expense)
+    //   - color: string (optional)
+    //   - icon: string (optional)
+    //   - parentId: string (optional)
+    //   - uid: string (required)
+    //
+    // Collection: transactions
+    // Fields:
+    //   - type: string (required, enum: income, expense, transfer)
+    //   - amount: number (required, positive)
+    //   - accountId: string (required)
+    //   - toAccountId: string (optional)
+    //   - categoryId: string (optional)
+    //   - date: string (required, ISO 8601)
+    //   - description: string (optional, max 200 chars)
+    //   - paymentMethod: string (optional)
+    //   - status: string (required, enum: paid, pending)
+    //   - uid: string (required)
+    //
+    // Collection: goals
+    // Fields:
+    //   - name: string (required, max 50 chars)
+    //   - targetValue: number (required, positive)
+    //   - currentValue: number (required)
+    //   - deadline: string (optional)
+    //   - uid: string (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
     // Helper Functions
     // ===============================================================
-    function isGuest(uid) {
-      return uid == 'guest-user';
-    }
-
     function isAuthenticated() {
       return request.auth != null;
+    }
+
+    function isGuest(uid) {
+      return uid == 'guest-user';
     }
     
     function isOwner(userId) {
@@ -28,36 +83,96 @@ service cloud.firestore {
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
     }
 
+    function isValidString(val, maxLen) {
+      return val is string && val.size() <= maxLen;
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}.*");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid']) &&
+             isValidString(data.uid, 128) &&
+             (!('email' in data) || isValidString(data.email, 128)) &&
+             (!('displayName' in data) || isValidString(data.displayName, 128));
+    }
+
+    function isValidAccount(data) {
+      return data.keys().hasAll(['name', 'balance', 'uid']) &&
+             isValidString(data.name, 50) &&
+             data.balance is number &&
+             isValidString(data.uid, 128) &&
+             (!('type' in data) || data.type in ['wallet', 'checking', 'savings', 'other']) &&
+             (!('imageUrl' in data) || isValidString(data.imageUrl, 204800)); // 200KB limit for base64 or URL
+    }
+
+    function isValidCategory(data) {
+      return data.keys().hasAll(['name', 'type', 'uid']) &&
+             isValidString(data.name, 50) &&
+             data.type in ['income', 'expense'] &&
+             isValidString(data.uid, 128);
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['type', 'amount', 'accountId', 'date', 'uid', 'status']) &&
+             data.type in ['income', 'expense', 'transfer'] &&
+             data.amount is number && data.amount >= 0 &&
+             isValidString(data.accountId, 128) &&
+             isValidDateString(data.date) &&
+             isValidString(data.uid, 128) &&
+             data.status in ['paid', 'pending'] &&
+             (!('description' in data) || isValidString(data.description, 200));
+    }
+
+    function isValidGoal(data) {
+      return data.keys().hasAll(['name', 'targetValue', 'uid']) &&
+             isValidString(data.name, 50) &&
+             data.targetValue is number && data.targetValue >= 0 &&
+             isValidString(data.uid, 128);
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
 
     match /users/{userId} {
-      allow read, write: if isOwner(userId) || isAdmin();
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+      allow delete: if isAdmin();
     }
 
     match /accounts/{accountId} {
-      allow read, delete: if isDocOwner() || isAdmin();
-      allow create: if (isAuthenticated() || isGuest(request.resource.data.uid));
-      allow update: if isDocOwner();
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isOwner(request.resource.data.uid) && isValidAccount(request.resource.data);
+      allow update: if isDocOwner() && isValidAccount(request.resource.data) && request.resource.data.uid == resource.data.uid;
+      allow delete: if isDocOwner() || isAdmin();
     }
 
     match /categories/{categoryId} {
-      allow read, delete: if isDocOwner() || isAdmin();
-      allow create: if (isAuthenticated() || isGuest(request.resource.data.uid));
-      allow update: if isDocOwner();
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isOwner(request.resource.data.uid) && isValidCategory(request.resource.data);
+      allow update: if isDocOwner() && isValidCategory(request.resource.data) && request.resource.data.uid == resource.data.uid;
+      allow delete: if isDocOwner() || isAdmin();
     }
 
     match /transactions/{transactionId} {
-      allow read, delete: if isDocOwner() || isAdmin();
-      allow create: if (isAuthenticated() || isGuest(request.resource.data.uid));
-      allow update: if isDocOwner();
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isOwner(request.resource.data.uid) && isValidTransaction(request.resource.data);
+      allow update: if isDocOwner() && isValidTransaction(request.resource.data) && request.resource.data.uid == resource.data.uid;
+      allow delete: if isDocOwner() || isAdmin();
     }
 
     match /goals/{goalId} {
-      allow read, delete: if isDocOwner() || isAdmin();
-      allow create: if (isAuthenticated() || isGuest(request.resource.data.uid));
-      allow update: if isDocOwner();
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isOwner(request.resource.data.uid) && isValidGoal(request.resource.data);
+      allow update: if isDocOwner() && isValidGoal(request.resource.data) && request.resource.data.uid == resource.data.uid;
+      allow delete: if isDocOwner() || isAdmin();
     }
   }
 }
